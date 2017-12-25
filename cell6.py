@@ -1,3 +1,7 @@
+#
+# Generate hexagonal cellular automaton BlocksCAD code.
+#
+
 from blockscad import *
 from math import *
 from sys import argv
