@@ -22,13 +22,14 @@ def get(i,j):
     if i<0:
         return get(1,0)
     rs = rowSize(i)
-    if j == -1:
-        return get(i,1)
-    elif j == rs:
+    if j < 0:
+        return get(i,-j)
+    elif j >= rs:
         if i % 2:
-            return get(i,rs-1)
+            return get(i,rs-1-(j-rs))
         else:
-            return get(i,rs-2)
+            return get(i,rs-2-(j-rs))
+    assert(0<=i and i<NUM_LEVELS and 0<=j and j<rs)
     return EX("data_%d_%d" % (i,j))
     
 def receptive(i,j):
