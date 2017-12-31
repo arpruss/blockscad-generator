@@ -33,15 +33,27 @@ def get(i,j):
     return EX("data_%d_%d" % (i,j))
     
 def receptive(i,j):
-    return ( (get(i,0)>=1).OR(get(i,1)>=1).OR(get(i+1,0)>=1).OR(get(i+1,1)>=1).OR(get(i-1,0)>=1) if j == 0 
-        else (get(i,j)>=1).OR(get(i,j-1)>=1).OR(get(i,j+1)>=1).OR(get(i+1,j)>=1).OR(get(i+1,j+1)>=1).OR(get(i-1,j)>=1).OR(get(i-1,j-1)>=1) )
+    if i==0:
+        return (get(0,0)>=1).OR(get(1,0)>=1)
+    elif j==0: 
+        return (get(i,0)>=1).OR(get(i,1)>=1).OR(get(i+1,0)>=1).OR(get(i+1,1)>=1).OR(get(i-1,0)>=1)
+    else:
+        return (get(i,j)>=1).OR(get(i,j-1)>=1).OR(get(i,j+1)>=1).OR(get(i+1,j)>=1).OR(get(i+1,j+1)>=1).OR(get(i-1,j)>=1).OR(get(i-1,j-1)>=1)
         
 def u(i,j):
     return receptive(i,j).ifthen(0,get(i,j))
     
 def neighborUSum(i,j):
+    rs = rowSize(i)
     if i == 0:
         return u(1,0)*6
+    elif j < 0:
+        return neighborUSum(i,-j)
+    elif j >= rs:
+        if i % 2:
+            return u(i,rs-1-(j-rs))
+        else:
+            return u(i,rs-2-(j-rs))
     elif j == 0:
         return (u(i,1)+u(i+1,1))*2+u(i+1,0)+u(i-1,0)
     else:
@@ -55,7 +67,7 @@ def emitter():
     return parts[0].union(*parts[1:])
     
 def evolved(i,j):
-    return receptive(i,j).ifthen(get(i,j)+"gamma",(EX(1)-EX("alpha")/2)*get(i,j)+EX("alpha_12")*neighborUSum(i,j))
+    return receptive(i,j).ifthen(get(i,j)+"gamma",(EX(1)-EX("alpha")/2)*get(i,j))+EX("alpha_12")*neighborUSum(i,j)
     
 def iterator():
     args = [EX("n")-1]+[evolved(i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
