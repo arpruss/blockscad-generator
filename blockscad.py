@@ -40,7 +40,7 @@ def compare(a, op, b):
     addfield(out, "OP", op)
     addvalue(out, "A", a)
     addvalue(out, "B", b)
-    out.append('</block><!--logic_compare-->')
+    out.append('</block>')
     return out
 
 def arithmetic(a, op, b):    
@@ -49,7 +49,7 @@ def arithmetic(a, op, b):
     addfield(out, "OP", op)
     addvalue(out, "A", a)
     addvalue(out, "B", b)
-    out.append('</block><!--math_arithmetic-->')
+    out.append('</block>')
     return out
 
 def logic(a, op, b):    
@@ -73,7 +73,7 @@ def modulo(a, b):
     out.append('<block type="math_modulo">')
     addvalue(out, "DIVIDEND", a)
     addvalue(out, "DIVISOR", b)
-    out.append('</block><!--math_modulo-->')
+    out.append('</block>')
     return out
     
 def setop(op, extra, base, list):
@@ -180,6 +180,18 @@ class EX(list):
         addvalue(out, "XVAL", x)
         addvalue(out, "YVAL", y)
         addstatement(out, "A", self)
+        out.append('</block>')
+        return EX(out)
+        
+    def assignTo(self, v, next=None):
+        out = []
+        out.append('<block type="variables_set">')
+        addfield(out, "VAR", v)
+        addvalue(out, "VALUE", self)
+        if next is not None:
+            out.append('<next>')
+            out += next
+            out.append('</next>')
         out.append('</block>')
         return EX(out)
         

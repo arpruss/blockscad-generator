@@ -14,23 +14,23 @@ else:
 def rowSize(i):
     return 1 if i == 0 else int(ceil((i+1)/2.));
 
-def get(i,j):
+def get(i,j,v="data"):
     if i >= NUM_LEVELS:
         return EX(0)
     elif i <= 1 and j != 0:
-        return get(i,0)
+        return get(i,0,v=v)
     if i<0:
-        return get(1,0)
+        return get(1,0,v=v)
     rs = rowSize(i)
     if j < 0:
-        return get(i,-j)
+        return get(i,-j,v=v)
     elif j >= rs:
         if i % 2:
-            return get(i,rs-1-(j-rs))
+            return get(i,rs-1-(j-rs),v=v)
         else:
-            return get(i,rs-2-(j-rs))
+            return get(i,rs-2-(j-rs),v=v)
     assert(0<=i and i<NUM_LEVELS and 0<=j and j<rs)
-    return EX("data_%d_%d" % (i,j))
+    return EX("%s%d_%d" % (v,i,j))
     
 def receptive(i,j):
     if i==0:
@@ -41,7 +41,7 @@ def receptive(i,j):
         return (get(i,j)>=1).OR(get(i,j-1)>=1).OR(get(i,j+1)>=1).OR(get(i+1,j)>=1).OR(get(i+1,j+1)>=1).OR(get(i-1,j)>=1).OR(get(i-1,j-1)>=1)
         
 def u(i,j):
-    return receptive(i,j).ifthen(0,get(i,j))
+    return get(i,j,"u")
     
 def neighborUSum(i,j):
     rs = rowSize(i)
@@ -67,13 +67,20 @@ def emitter():
     return parts[0].union(*parts[1:])
     
 def evolved(i,j):
-    return receptive(i,j).ifthen(get(i,j)+"gamma",(EX(1)-EX("alpha")/2)*get(i,j))+EX("alpha_12")*neighborUSum(i,j)
+    return (get(i,j,"u")==0).ifthen(get(i,j)+"gamma",(EX(1)-EX("alpha")/2)*get(i,j,"u"))+EX("alpha_12")*neighborUSum(i,j)
     
 def iterator():
     args = [EX("n")-1]+[evolved(i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
     return invokeModule("evolve", args)
+    
+def uValues(nextStatement):
+    out = []
+    for i in range(NUM_LEVELS):
+        for j in range(rowSize(i)):
+            nextStatement = receptive(i,j).ifthen(EX(0),get(i,j)).assignTo("u%d_%d" % (i,j), nextStatement)
+    return nextStatement
 
-vars = ["data_%d_%d" % (i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
+vars = ["data%d_%d" % (i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
 varCount = len(vars)
 
 out = []
@@ -85,7 +92,7 @@ module("draw", ["i","j"], None)
 function("evolve", ["n"]+vars, None)
 #out += function("survive", ["neighbors"], EX(1))
 #out += function("generate", ["neighbors"], (EX(1)==EX("neighbors")).ifthen(EX(1),EX(0)))
-out += module("evolve", ["n"]+vars, (EX("n")==0).statementif( emitter() ).union( (EX("n")>0).statementif( iterator() ) ) )
+out += module("evolve", ["n"]+vars, uValues((EX("n")==0).statementif( emitter() ).union( (EX("n")>0).statementif( iterator() ) )) )
 out += module("go", [], invokeModule("evolve", [EX("iterations")]+[EX("beta" if i>0 else 1) for i in range(varCount)]) )
 #out += invokeModule("go", [])
 
