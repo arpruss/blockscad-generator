@@ -63,7 +63,7 @@ def emitter():
     parts = []
     for i in range(NUM_LEVELS):
         for j in range(rowSize(i)):
-            parts.append( (get(i,j)>=1).statementif( invokeModule("draw", [EX(i),EX(j)] ) ) )
+            parts.append( (get(i,j)>=1).statementif( invokeModule("draw", [EX(i),EX(j),get(i,j)] ) ) )
     return parts[0].union(*parts[1:])
     
 def evolved(i,j):
@@ -88,12 +88,13 @@ out = []
 addhead(out)
 
 #out += module("draw", ["i","j"], square(5,5).translate3(EX("i")*6,EX("j")*6,EX(0)) )
-module("draw", ["i","j"], None)
+module("draw", ["i","j","v"], None)
 function("evolve", ["n"]+vars, None)
+function("get_beta", [], None)
 #out += function("survive", ["neighbors"], EX(1))
 #out += function("generate", ["neighbors"], (EX(1)==EX("neighbors")).ifthen(EX(1),EX(0)))
 out += module("evolve", ["n"]+vars, uValues((EX("n")==0).statementif( emitter() ).union( (EX("n")>0).statementif( iterator() ) )) )
-out += module("go", [], invokeModule("evolve", [EX("iterations")]+[EX("beta" if i>0 else 1) for i in range(varCount)]) )
+out += module("go", [], invokeModule("evolve", [EX("iterations")]+[EX(invokeFunction("get_beta",[]) if i>0 else 1) for i in range(varCount)]) )
 #out += invokeModule("go", [])
 
 addtail(out)
