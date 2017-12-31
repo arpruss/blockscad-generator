@@ -103,13 +103,13 @@ class EX(list):
         return EX(compare(self, "LT", EX(x)))        
         
     def __le__(self, x):
-        return EX(compare(self, "LE", EX(x)))        
+        return EX(compare(self, "LTE", EX(x)))        
         
     def __gt__(self, x):
         return EX(compare(self, "GT", EX(x)))        
         
     def __ge__(self, x):
-        return EX(compare(self, "GE", EX(x)))
+        return EX(compare(self, "GTE", EX(x)))
         
     def __ne__(self, x):
         return EX(compare(self, "NE", EX(x)))
