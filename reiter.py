@@ -16,11 +16,11 @@ def rowSize(i):
 
 def get(i,j,v="data"):
     if i >= NUM_LEVELS:
-        return EX(0)
-    elif i <= 1 and j != 0:
-        return get(i,0,v=v)
+        return EX("beta")
     if i<0:
         return get(1,0,v=v)
+    if i <= 1 and j != 0:
+        return get(i,0,v=v)
     rs = rowSize(i)
     if j < 0:
         return get(i,-j,v=v)
@@ -64,10 +64,10 @@ def emitter():
     for i in range(NUM_LEVELS):
         for j in range(rowSize(i)):
             parts.append( (get(i,j)>=1).statementif( invokeModule("draw", [EX(i),EX(j),get(i,j)] ) ) )
-    return parts[0].union(*parts[1:])
+    return parts[0].union(*parts[1:])    
     
 def evolved(i,j):
-    return (get(i,j,"u")==0).ifthen(get(i,j)+"gamma",(EX(1)-EX("alpha")/2)*get(i,j,"u"))+EX("alpha_12")*neighborUSum(i,j)
+    return invokeFunction("cell", [get(i,j),get(i,j,"u"),neighborUSum(i,j)]) #(get(i,j,"u")==0).ifthen(get(i,j)+"gamma",(EX(1)-EX("alpha")/2)*get(i,j,"u"))+EX("alpha_12")*neighborUSum(i,j)
     
 def iterator():
     args = [EX("n")-1]+[evolved(i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
@@ -77,7 +77,12 @@ def uValues(nextStatement):
     out = []
     for i in range(NUM_LEVELS):
         for j in range(rowSize(i)):
-            nextStatement = receptive(i,j).ifthen(EX(0),get(i,j)).assignTo("u%d_%d" % (i,j), nextStatement)
+            if j==0:
+                c = invokeFunction("calc_u", [get(i,0),get(i,1),get(i+1,0),get(i+1,1),get(i-1,0),EX(0),EX(0)])
+            else:
+                c = invokeFunction("calc_u", [get(i,j),get(i,j-1),get(i,j+1),get(i+1,j),get(i+1,j+1),get(i-1,j),get(i-1,j-1)])
+#           c = receptive(i,j).ifthen(EX(0),get(i,j)).
+            nextStatement = c.assignTo("u%d_%d" % (i,j), nextStatement)
     return nextStatement
 
 vars = ["data%d_%d" % (i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
@@ -91,6 +96,10 @@ addhead(out)
 module("draw", ["i","j","v"], None)
 function("evolve", ["n"]+vars, None)
 function("get_beta", [], None)
+out += function("calc_u", ["v", "v1", "v2", "v3", "v4", "v5", "v6"],
+    (EX("v")>=1).OR(EX("v1")>=1).OR(EX("v2")>=1).OR(EX("v3")>=1).OR(EX("v4")>=1).OR(EX("v5")>=1).OR(EX("v6")>=1).ifthen(EX(0),EX("v")))
+out += function("cell", ["v","u","uSum"],
+        (EX("u")==0).ifthen(EX("v")+"gamma",(EX(1)-EX("alpha")/2)*"u")+EX("alpha")/12*"uSum")
 #out += function("survive", ["neighbors"], EX(1))
 #out += function("generate", ["neighbors"], (EX(1)==EX("neighbors")).ifthen(EX(1),EX(0)))
 out += module("evolve", ["n"]+vars, uValues((EX("n")==0).statementif( emitter() ).union( (EX("n")>0).statementif( iterator() ) )) )
