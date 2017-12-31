@@ -19,6 +19,8 @@ def get(i,j):
         return EX(0)
     elif i <= 1 and j != 0:
         return get(i,0)
+    if i<0:
+        return get(1,0)
     rs = rowSize(i)
     if j == -1:
         return get(i,1)
@@ -29,23 +31,30 @@ def get(i,j):
             return get(i,rs-2)
     return EX("data_%d_%d" % (i,j))
     
-def neighborCount(i,j):
-    if i == 0:
-        return get(1,0)*6
-    elif j == 0:
-        return (get(i,1)+get(i+1,1))*2+get(i+1,0)+get(i-1,0)
-    else:
-        return get(i,j-1)+get(i,j+1)+get(i+1,j)+get(i+1,j+1)+get(i-1,j)+get(i-1,j-1)
+def receptive(i,j):
+    return ( (get(i,0)>=1).OR(get(i,1)>=1).OR(get(i+1,0)>=1).OR(get(i+1,1)>=1).OR(get(i-1,0)>=1) if j == 0 
+        else (get(i,j)>=1).OR(get(i,j-1)>=1).OR(get(i,j+1)>=1).OR(get(i+1,j)>=1).OR(get(i+1,j+1)>=1).OR(get(i-1,j)>=1).OR(get(i-1,j-1)>=1) )
         
+def u(i,j):
+    return receptive(i,j).ifthen(0,get(i,j))
+    
+def neighborUSum(i,j):
+    if i == 0:
+        return u(1,0)*6
+    elif j == 0:
+        return (u(i,1)+u(i+1,1))*2+u(i+1,0)+u(i-1,0)
+    else:
+        return u(i,j-1)+u(i,j+1)+u(i+1,j)+u(i+1,j+1)+u(i-1,j)+u(i-1,j-1)
+
 def emitter():
     parts = []
     for i in range(NUM_LEVELS):
         for j in range(rowSize(i)):
-            parts.append( (get(i,j)>0).statementif( invokeModule("draw", [EX(i),EX(j)] ) ) )
+            parts.append( (get(i,j)>=1).statementif( invokeModule("draw", [EX(i),EX(j)] ) ) )
     return parts[0].union(*parts[1:])
     
 def evolved(i,j):
-    return (get(i,j)>0).ifthen(invokeFunction("survive", [neighborCount(i,j)]), invokeFunction("generate", [neighborCount(i,j)]))
+    return receptive(i,j).ifthen(get(i,j)+"gamma",(EX(1)-EX("alpha")/2)*get(i,j)+EX("alpha_12")*neighborUSum(i,j))
     
 def iterator():
     args = [EX("n")-1]+[evolved(i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
@@ -61,12 +70,10 @@ addhead(out)
 #out += module("draw", ["i","j"], square(5,5).translate3(EX("i")*6,EX("j")*6,EX(0)) )
 module("draw", ["i","j"], None)
 function("evolve", ["n"]+vars, None)
-function("survive", ["neighbors"], None)
-function("generate", ["neighbors"], None)
 #out += function("survive", ["neighbors"], EX(1))
 #out += function("generate", ["neighbors"], (EX(1)==EX("neighbors")).ifthen(EX(1),EX(0)))
 out += module("evolve", ["n"]+vars, (EX("n")==0).statementif( emitter() ).union( (EX("n")>0).statementif( iterator() ) ) )
-out += module("go", [], invokeModule("evolve", [EX("iterations")]+[EX(0 if i>0 else 1) for i in range(varCount)]) )
+out += module("go", [], invokeModule("evolve", [EX("iterations")]+[EX("beta" if i>0 else 1) for i in range(varCount)]) )
 #out += invokeModule("go", [])
 
 addtail(out)

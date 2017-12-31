@@ -52,6 +52,22 @@ def arithmetic(a, op, b):
     out.append('</block><!--math_arithmetic-->')
     return out
 
+def logic(a, op, b):    
+    out = []
+    out.append('<block type="logic_operation">')
+    addfield(out, "OP", op)
+    addvalue(out, "A", a)
+    addvalue(out, "B", b)
+    out.append('</block>')
+    return out
+
+def negate(a):    
+    out = []
+    out.append('<block type="logic_negate">')
+    addvalue(out, "BOOL", a)
+    out.append('</block>')
+    return out
+
 def modulo(a, b):    
     out = []
     out.append('<block type="math_modulo">')
@@ -115,6 +131,15 @@ class EX(list):
         
     def __mod__(self, x):
         return EX(modulo(self, EX(x)))
+        
+    def AND(self, x):
+        return EX(logic(self, "AND", EX(x)))
+        
+    def OR(self, x):
+        return EX(logic(self, "OR", EX(x)))
+        
+    def NOT(self):
+        return EX(negate(self))
         
     def ifthen(self, yes, no):
         out = []
