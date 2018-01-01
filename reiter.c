@@ -3,6 +3,7 @@
 #include <string.h>
 
 #define LEVELS 500
+#define BITS_PER_VALUE 52
 
 typedef double row[LEVELS/2+1];
 row s[LEVELS];
@@ -12,7 +13,7 @@ row s1[LEVELS];
 double alpha = 0.502;
 double beta = 0.4;
 double gamma1 = 0.0001;
-int steps = 1000;
+int steps = 10000;
 
 int rowSize(int i) { 
     return i == 0 ? 1 : ceil((i+1.)/2);
@@ -90,11 +91,39 @@ int main(int argc, char** argv) {
             s[i][j] = beta;
     s[0][0] = 1.;
     
-    while(steps--) {
+    for (int step=0; step<steps; step++) {
+        if(step%10==0)
+            fprintf(stderr,"[%d]",step);
+        
         calculateU();
         stepToS1();
         memcpy(s, s1, sizeof(s));
     }
+    
+    printf("<?xml version='1.0' ?>\n");
+    printf("<xml xmlns='https://blockscad3d.com'>\n");
+    printf("<version num='1.10.2'/>");
+    for (int i=0;i<LEVELS;i++) {
+        int rs = rowSize(i);
+        for(int j=0;j<rs;j+=BITS_PER_VALUE) {
+            long long v=0;
+            for (int k=0;k<BITS_PER_VALUE;k++)
+                if (s[i][j+k]>=1.) {
+                    v += (double)((long long)1 << k);
+                }
+            if (v!=0) {
+                printf("<block type='procedures_callreturn'><mutation name='draw'>\n");
+                printf(" <arg name='i'/><arg name='j'/><arg name='v'/>\n");
+                printf("</mutation>\n");
+                printf("<value name='ARG0'><block type='math_number'><field name='NUM'>%d</field></block></value>\n", i);
+                printf("<value name='ARG1'><block type='math_number'><field name='NUM'>%d</field></block></value>\n", j);
+                printf("<value name='ARG2'><block type='math_number'><field name='NUM'>%lld</field></block></value>\n", v);
+                printf("</block>");
+            }
+            
+        }
+    }
+    printf("</xml>");
     
     return 0;
 }
