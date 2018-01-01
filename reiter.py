@@ -14,7 +14,7 @@ else:
 def rowSize(i):
     return 1 if i == 0 else int(ceil((i+1)/2.));
 
-def get(i,j,v="data"):
+def get(i,j,v="s"):
     if i >= NUM_LEVELS:
         return EX("beta")
     if i<0:
@@ -63,7 +63,7 @@ def emitter():
     parts = []
     for i in range(NUM_LEVELS):
         for j in range(rowSize(i)):
-            parts.append( (get(i,j)>=1).statementif( invokeModule("draw", [EX(i),EX(j),get(i,j)] ) ) )
+            parts.append( invokeModule("draw", [EX(i),EX(j),get(i,j)] ) )
     return parts[0].union(*parts[1:])    
     
 def evolved(i,j):
@@ -85,7 +85,7 @@ def uValues(nextStatement):
             nextStatement = c.assignTo("u%d_%d" % (i,j), nextStatement)
     return nextStatement
 
-vars = ["data%d_%d" % (i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
+vars = ["s%d_%d" % (i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
 varCount = len(vars)
 
 out = []
@@ -96,13 +96,12 @@ addhead(out)
 module("draw", ["i","j","v"], None)
 function("evolve", ["n"]+vars, None)
 function("get_beta", [], None)
-out += function("calc_u", ["v", "v1", "v2", "v3", "v4", "v5", "v6"],
-    (EX("v")>=1).OR(EX("v1")>=1).OR(EX("v2")>=1).OR(EX("v3")>=1).OR(EX("v4")>=1).OR(EX("v5")>=1).OR(EX("v6")>=1).ifthen(EX(0),EX("v")))
-out += function("cell", ["v","u","uSum"],
-        (EX("u")==0).ifthen(EX("v")+"gamma",(EX(1)-EX("alpha")/2)*"u")+EX("alpha")/12*"uSum")
+function("calc_u", ["s","s1","s2","s3","s4","s5","s6"], None)
+function("cell", ["s","u","uSum"], None)
+#        (EX("u")==0).ifthen(EX("v")+"gamma",(EX(1)-EX("alpha")/2)*"u")+EX("alpha")/12*"uSum")
 #out += function("survive", ["neighbors"], EX(1))
 #out += function("generate", ["neighbors"], (EX(1)==EX("neighbors")).ifthen(EX(1),EX(0)))
-out += module("evolve", ["n"]+vars, uValues((EX("n")==0).statementif( emitter() ).union( (EX("n")>0).statementif( iterator() ) )) )
+out += module("evolve", ["n"]+vars, uValues((EX("n")==0).statementif( emitter(), elseStatement=iterator() ) ) )
 out += module("go", [], invokeModule("evolve", [EX("iterations")]+[EX(invokeFunction("get_beta",[]) if i>0 else 1) for i in range(varCount)]) )
 #out += invokeModule("go", [])
 

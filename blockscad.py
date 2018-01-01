@@ -112,7 +112,7 @@ class EX(list):
         return EX(compare(self, "GTE", EX(x)))
         
     def __ne__(self, x):
-        return EX(compare(self, "NE", EX(x)))
+        return EX(compare(self, "NEQ", EX(x)))
         
     def __add__(self, x):
         return EX(arithmetic(self, "ADD", EX(x)))
@@ -150,11 +150,15 @@ class EX(list):
         out.append('</block>')
         return EX(out)
         
-    def statementif(self, yes):
+    def statementif(self, yes, elseStatement=None):
         out = []
         out.append('<block type="controls_if">')
+        if elseStatement is not None:
+            out.append('<mutation else="1"></mutation>')
         addvalue(out, "IF0", self)
         addvalue(out, "DO0", EX(yes))
+        if elseStatement is not None:
+            addvalue(out, "ELSE", EX(elseStatement))
         out.append('</block>')
         return EX(out)
         

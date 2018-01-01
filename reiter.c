@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define LEVELS 500
 #define BITS_PER_VALUE 52
@@ -68,7 +69,7 @@ static inline double uSum(int i, int j) {
 static void stepToS1(void) {
     for(int i=0;i<LEVELS;i++)
         for(int j=0;j<rowSize(i);j++) {
-            s1[i][j] = (u[i][j]==0. ? s[i][j]+gamma1 : 1.-alpha/2.*u[i][j]) + alpha/12.*uSum(i,j);                        
+            s1[i][j] = (u[i][j]==0. ? s[i][j]+gamma1 : (1.-alpha/2.)*u[i][j]) + alpha/12.*uSum(i,j);                        
         }
 }
 
@@ -92,7 +93,7 @@ int main(int argc, char** argv) {
     s[0][0] = 1.;
     
     for (int step=0; step<steps; step++) {
-        if(step%10==0)
+        if(step%100==0)
             fprintf(stderr,"[%d]",step);
         
         calculateU();
@@ -112,7 +113,7 @@ int main(int argc, char** argv) {
                     v += (double)((long long)1 << k);
                 }
             if (v!=0) {
-                printf("<block type='procedures_callreturn'><mutation name='draw'>\n");
+                printf("<block type='procedures_callnoreturn'><mutation name='draw'>\n");
                 printf(" <arg name='i'/><arg name='j'/><arg name='v'/>\n");
                 printf("</mutation>\n");
                 printf("<value name='ARG0'><block type='math_number'><field name='NUM'>%d</field></block></value>\n", i);
