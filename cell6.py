@@ -41,11 +41,11 @@ def emitter():
     parts = []
     for i in range(NUM_LEVELS):
         for j in range(rowSize(i)):
-            parts.append( (get(i,j)>0).statementif( invokeModule("draw", [EX(i),EX(j)] ) ) )
+            parts.append( invokeModule("draw", [EX(i),EX(j),get(i,j)] ) ) 
     return parts[0].union(*parts[1:])
     
 def evolved(i,j):
-    return (get(i,j)>0).ifthen(invokeFunction("survive", [neighborCount(i,j)]), invokeFunction("generate", [neighborCount(i,j)]))
+    return invokeFunction("cell", [get(i,j),neighborCount(i,j)])
     
 def iterator():
     args = [EX("n")-1]+[evolved(i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
@@ -58,14 +58,10 @@ out = []
 
 addhead(out)
 
-#out += module("draw", ["i","j"], square(5,5).translate3(EX("i")*6,EX("j")*6,EX(0)) )
-module("draw", ["i","j"], None)
+module("draw", ["i","j","v"], None)
 function("evolve", ["n"]+vars, None)
-function("survive", ["neighbors"], None)
-function("generate", ["neighbors"], None)
-#out += function("survive", ["neighbors"], EX(1))
-#out += function("generate", ["neighbors"], (EX(1)==EX("neighbors")).ifthen(EX(1),EX(0)))
-out += module("evolve", ["n"]+vars, (EX("n")==0).statementif( emitter() ).union( (EX("n")>0).statementif( iterator() ) ) )
+function("cell", ["v", "neighbors"], None)
+out += module("evolve", ["n"]+vars, (EX("n")==0).statementif( emitter(), elseStatement=iterator() ) )
 out += module("go", [], invokeModule("evolve", [EX("iterations")]+[EX(0 if i>0 else 1) for i in range(varCount)]) )
 #out += invokeModule("go", [])
 
