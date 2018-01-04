@@ -32,7 +32,10 @@ def variable(name):
     return ['<block type="variables_get"><field name="VAR">%s</field></block>' % name]
 
 def number(x):
-    return ['<block type="math_number"><field name="NUM">%d</field></block>' % x]
+    if x == int(x):
+        return ['<block type="math_number"><field name="NUM">%d</field></block>' % x]
+    else:
+        return ['<block type="math_number"><field name="NUM">%f</field></block>' % x]
 
 def compare(a, op, b):    
     out = []
