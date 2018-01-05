@@ -83,10 +83,10 @@ def emitter():
     return parts[0].union(*parts[1:])    
     
 def evolved(i,j):
-    return invokeFunction("cell", [get(i,j),get(i,j,"u")]+getNeighbors(i,j)+[EX("r")]) #(get(i,j,"u")==0).ifthen(get(i,j)+"gamma",(EX(1)-EX("alpha")/2)*get(i,j,"u"))+EX("alpha_12")*neighborUSum(i,j)
+    return invokeFunction("cell", [EX("g"),get(i,j),get(i,j,"u")]+getNeighbors(i,j)) #(get(i,j,"u")==0).ifthen(get(i,j)+"gamma",(EX(1)-EX("alpha")/2)*get(i,j,"u"))+EX("alpha_12")*neighborUSum(i,j)
     
 def iterator():
-    args = [EX("n")-1,EX("r")]+[evolved(i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
+    args = [EX("n")-1]+[evolved(i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
     return invokeModule("evolve", args)
     
 def uValues(nextStatement):
@@ -110,16 +110,17 @@ addhead(out)
 
 #out += module("draw", ["i","j"], square(5,5).translate3(EX("i")*6,EX("j")*6,EX(0)) )
 module("draw", ["i","j","v"], None)
-module("evolve", ["n","r"]+vars, None)
+module("evolve", ["n"]+vars, None)
 function("get_beta", [], None)
-function("update_r", ["r"], None)
+function("get_gamma", [], None)
 function("calc_u", ["s","s1","s2","s3","s4","s5","s6"], None)
-function("cell", ["s","u","u1","u2","u3","u4","u5","u6","r"], None)
+function("cell", ["g","s","u","u1","u2","u3","u4","u5","u6"], None)
 #        (EX("u")==0).ifthen(EX("v")+"gamma",(EX(1)-EX("alpha")/2)*"u")+EX("alpha")/12*"uSum")
 #out += function("survive", ["neighbors"], EX(1))
 #out += function("generate", ["neighbors"], (EX(1)==EX("neighbors")).ifthen(EX(1),EX(0)))
-out += module("evolve", ["n","r"]+vars, invokeFunction("update_r",["r"]).assignTo("r", uValues((EX("n")==0).statementif( emitter(), elseStatement=iterator() ) ) ))
-out += module("go", [], invokeModule("evolve", [EX("iterations"),EX("r")]+[EX(invokeFunction("get_beta",[]) if i>0 else 1) for i in range(varCount)]) )
+out += module("evolve", ["n"]+vars, 
+            invokeFunction("get_gamma",[]).assignTo("g", uValues((EX("n")==0).statementif( emitter(), elseStatement=iterator() ) ) ))
+out += module("go", [], invokeModule("evolve", [EX("iterations")]+[EX(invokeFunction("get_beta",[]) if i>0 else 1) for i in range(varCount)]) )
 #out += invokeModule("go", [])
 
 addtail(out)
