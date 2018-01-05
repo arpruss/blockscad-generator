@@ -43,6 +43,22 @@ def receptive(i,j):
 def u(i,j):
     return get(i,j,"u")
     
+def getNeighbors(i,j):
+    rs = rowSize(i)
+    if i == 0:
+        return [u(1,0)]*6
+    elif j < 0:
+        return getNeighbors(i,-j)
+    elif j >= rs:
+        if i % 2:
+            return getNeighbors(i,rs-1-(j-rs))
+        else:
+            return getNeighbors(i,rs-2-(j-rs))
+    elif j == 0:
+        return [u(i,1),u(i+1,1)]*2+[u(i+1,0),u(i-1,0)]
+    else:
+        return [u(i,j-1),u(i,j+1),u(i+1,j),u(i+1,j+1),u(i-1,j),u(i-1,j-1)]
+    
 def neighborUSum(i,j):
     rs = rowSize(i)
     if i == 0:
@@ -51,9 +67,9 @@ def neighborUSum(i,j):
         return neighborUSum(i,-j)
     elif j >= rs:
         if i % 2:
-            return u(i,rs-1-(j-rs))
+            return neighborUSum(i,rs-1-(j-rs))
         else:
-            return u(i,rs-2-(j-rs))
+            return neighborUSum(i,rs-2-(j-rs))
     elif j == 0:
         return (u(i,1)+u(i+1,1))*2+u(i+1,0)+u(i-1,0)
     else:
@@ -67,10 +83,10 @@ def emitter():
     return parts[0].union(*parts[1:])    
     
 def evolved(i,j):
-    return invokeFunction("cell", [get(i,j),get(i,j,"u"),neighborUSum(i,j)]) #(get(i,j,"u")==0).ifthen(get(i,j)+"gamma",(EX(1)-EX("alpha")/2)*get(i,j,"u"))+EX("alpha_12")*neighborUSum(i,j)
+    return invokeFunction("cell", [get(i,j),get(i,j,"u")]+getNeighbors(i,j)+[EX("r")]) #(get(i,j,"u")==0).ifthen(get(i,j)+"gamma",(EX(1)-EX("alpha")/2)*get(i,j,"u"))+EX("alpha_12")*neighborUSum(i,j)
     
 def iterator():
-    args = [EX("n")-1]+[evolved(i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
+    args = [EX("n")-1,EX("r")]+[evolved(i,j) for i in range(NUM_LEVELS) for j in range(rowSize(i))]
     return invokeModule("evolve", args)
     
 def uValues(nextStatement):
@@ -94,15 +110,16 @@ addhead(out)
 
 #out += module("draw", ["i","j"], square(5,5).translate3(EX("i")*6,EX("j")*6,EX(0)) )
 module("draw", ["i","j","v"], None)
-function("evolve", ["n"]+vars, None)
+module("evolve", ["n","r"]+vars, None)
 function("get_beta", [], None)
+function("update_r", ["r"], None)
 function("calc_u", ["s","s1","s2","s3","s4","s5","s6"], None)
-function("cell", ["s","u","uSum"], None)
+function("cell", ["s","u","u1","u2","u3","u4","u5","u6","r"], None)
 #        (EX("u")==0).ifthen(EX("v")+"gamma",(EX(1)-EX("alpha")/2)*"u")+EX("alpha")/12*"uSum")
 #out += function("survive", ["neighbors"], EX(1))
 #out += function("generate", ["neighbors"], (EX(1)==EX("neighbors")).ifthen(EX(1),EX(0)))
-out += module("evolve", ["n"]+vars, uValues((EX("n")==0).statementif( emitter(), elseStatement=iterator() ) ) )
-out += module("go", [], invokeModule("evolve", [EX("iterations")]+[EX(invokeFunction("get_beta",[]) if i>0 else 1) for i in range(varCount)]) )
+out += module("evolve", ["n","r"]+vars, invokeFunction("update_r",["r"]).assignTo("r", uValues((EX("n")==0).statementif( emitter(), elseStatement=iterator() ) ) ))
+out += module("go", [], invokeModule("evolve", [EX("iterations"),EX("r")]+[EX(invokeFunction("get_beta",[]) if i>0 else 1) for i in range(varCount)]) )
 #out += invokeModule("go", [])
 
 addtail(out)
