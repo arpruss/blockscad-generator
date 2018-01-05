@@ -17,12 +17,12 @@ def addtail(out):
 
 def addvalue(out, name, value):
     out.append('<value name="%s">' % name)
-    out += value
+    out += EX(value)
     out.append('</value>')
     
 def addstatement(out, name, value):
     out.append('<statement name="%s">' % name)
-    out += value
+    out += EX(value)
     out.append('</statement>')
     
 def addfield(out, name, value):
@@ -170,6 +170,30 @@ class EX(list):
         
     def difference(self, *args):
         return EX(setop("difference", "minus", self, args))
+        
+    def linear_extrude(self, height, twist=0, xscale=1, yscale=1):
+        out = []
+        out.append('<block type="linearextrude">')
+        addfield(out, "CENTERDROPDOWN", "false")
+        addvalue(out, "HEIGHT", EX(height))
+        addvalue(out, "TWIST", EX(twist))
+        addvalue(out, "XSCALE", EX(xscale))
+        addvalue(out, "YSCALE", EX(yscale))
+        addstatement(out, "A", self)
+        out.append("</block>")
+        return EX(out)
+        
+    def color(self, r, g, b):
+        out = []
+        out.append('<block type="color_rgb">')
+        out.append('<mutation plus="0" isrgb="true"></mutation>')
+        addfield(out, 'SCHEME', "RGB")
+        addvalue(out, 'RED', r)
+        addvalue(out, 'GREEN', g)
+        addvalue(out, 'BLUE', b)
+        addstatement(out, "A", self)
+        out.append('</block>')
+        return EX(out)
         
     def translate3(self, x, y, z):
         out = []
